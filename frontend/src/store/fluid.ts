@@ -9,6 +9,7 @@ export const useFluidStore = defineStore('fluid', {
     particleCount: 800,
     currentPreset: PRESETS[0],
     params: { ...DEFAULT_PARAMS } as SimParams,
+    showFlowField: true,
     fps: 0,
     frameCount: 0,
     _animId: null as number | null,

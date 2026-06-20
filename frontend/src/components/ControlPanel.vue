@@ -40,6 +40,9 @@ function onParticleCount(e: Event) {
 function onDt(e: Event) {
   store.updateParam('dt', parseFloat((e.target as HTMLInputElement).value))
 }
+function toggleFlowField() {
+  store.showFlowField = !store.showFlowField
+}
 </script>
 
 <template>
@@ -158,6 +161,30 @@ function onDt(e: Event) {
           class="w-full accent-blue-500 h-1.5"
         />
       </div>
+    </div>
+
+    <!-- Display options -->
+    <div class="space-y-2">
+      <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wider">显示选项</h3>
+      <button
+        @click="toggleFlowField"
+        class="w-full flex items-center justify-between px-3 py-2 rounded text-xs transition"
+        :class="store.showFlowField
+          ? 'bg-blue-600/20 text-blue-300 border border-blue-500/50'
+          : 'bg-gray-700 text-gray-400 hover:bg-gray-600 border border-gray-600'"
+      >
+        <span>流向指示（矢量场）</span>
+        <span
+          class="w-9 h-5 rounded-full relative transition"
+          :class="store.showFlowField ? 'bg-blue-500' : 'bg-gray-600'"
+        >
+          <span
+            class="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all"
+            :class="store.showFlowField ? 'left-4' : 'left-0.5'"
+          />
+        </span>
+      </button>
+      <p class="text-xs text-gray-600">在网格上绘制箭头，指示局部主流方向</p>
     </div>
 
     <!-- Stats -->

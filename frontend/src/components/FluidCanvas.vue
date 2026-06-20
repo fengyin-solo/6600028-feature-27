@@ -18,6 +18,97 @@ function velocityToColor(speed: number): string {
   return `hsl(${hue}, ${sat}%, ${light}%)`
 }
 
+function drawFlowField(ctx: CanvasRenderingContext2D) {
+  if (!store.engine) return
+
+  // Grid that aggregates local average velocity
+  const cell = 50
+  const gw = Math.ceil(W / cell)
+  const gh = Math.ceil(H / cell)
+  const vxGrid = new Float32Array(gw * gh)
+  const vyGrid = new Float32Array(gw * gh)
+  const cntGrid = new Float32Array(gw * gh)
+
+  for (const p of store.engine.particles) {
+    const gx = Math.floor(p.x / cell)
+    const gy = Math.floor(p.y / cell)
+    if (gx >= 0 && gx < gw && gy >= 0 && gy < gh) {
+      const idx = gy * gw + gx
+      vxGrid[idx] += p.vx
+      vyGrid[idx] += p.vy
+      cntGrid[idx]++
+    }
+  }
+
+  const maxSpeed = 200
+  const maxArrow = cell * 0.45
+
+  for (let gy = 0; gy < gh; gy++) {
+    for (let gx = 0; gx < gw; gx++) {
+      const idx = gy * gw + gx
+      const cnt = cntGrid[idx]
+      if (cnt === 0) continue
+
+      const avgVx = vxGrid[idx] / cnt
+      const avgVy = vyGrid[idx] / cnt
+      const speed = Math.sqrt(avgVx * avgVx + avgVy * avgVy)
+      if (speed < 0.5) continue // skip near-stagnant regions
+
+      const cx = gx * cell + cell / 2
+      const cy = gy * cell + cell / 2
+
+      const t = Math.min(speed / maxSpeed, 1)
+      const len = maxArrow * (0.3 + t * 0.7)
+      const ux = avgVx / speed
+      const uy = avgVy / speed
+      const ex = cx + ux * len
+      const ey = cy + uy * len
+
+      const color = velocityToColor(speed)
+
+      // Dark halo so arrows stay readable over particles
+      ctx.lineCap = 'round'
+      ctx.strokeStyle = 'rgba(12, 18, 34, 0.85)'
+      ctx.lineWidth = 4
+      ctx.beginPath()
+      ctx.moveTo(cx, cy)
+      ctx.lineTo(ex, ey)
+      ctx.stroke()
+
+      // Arrow shaft
+      ctx.strokeStyle = color
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(cx, cy)
+      ctx.lineTo(ex, ey)
+      ctx.stroke()
+
+      // Arrowhead
+      const head = 7
+      const angle = Math.atan2(uy, ux)
+      ctx.fillStyle = color
+      ctx.beginPath()
+      ctx.moveTo(ex, ey)
+      ctx.lineTo(
+        ex - head * Math.cos(angle - 0.42),
+        ey - head * Math.sin(angle - 0.42)
+      )
+      ctx.lineTo(
+        ex - head * Math.cos(angle + 0.42),
+        ey - head * Math.sin(angle + 0.42)
+      )
+      ctx.closePath()
+      ctx.fill()
+
+      // Origin marker
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)'
+      ctx.beginPath()
+      ctx.arc(cx, cy, 1.6, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  }
+}
+
 function draw() {
   const ctx = canvas.value?.getContext('2d')
   if (!ctx) return
@@ -84,6 +175,11 @@ function draw() {
     ctx.arc(p.x, p.y, radius, 0, Math.PI * 2)
     ctx.fillStyle = color
     ctx.fill()
+  }
+
+  // Draw local flow direction indicators (vector field)
+  if (store.showFlowField) {
+    drawFlowField(ctx)
   }
 
   // FPS overlay
